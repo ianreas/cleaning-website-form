@@ -39,7 +39,7 @@ export default function Header() {
               <Sparkles className="w-5 h-5 text-white" />
             </div>
             <span className="font-heading font-bold text-xl text-primary">
-              Raushan Cleaning
+              AllenCleaning
             </span>
           </div>
 

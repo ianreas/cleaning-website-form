@@ -16,7 +16,7 @@ export default function Footer() {
                 <Sparkles className="w-5 h-5 text-white" />
               </div>
               <span className="font-heading font-bold text-xl">
-                Raushan Cleaning
+                AllenCleaning
               </span>
             </div>
             <p className="text-gray-400 max-w-md mb-6">
@@ -33,7 +33,7 @@ export default function Footer() {
                 <Phone className="w-4 h-4" />
               </a>
               <a
-                href="mailto:info@raushancleaning.com"
+                href="mailto:info@allencleaning.com"
                 className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center hover:bg-primary transition-colors"
                 aria-label="Email us"
               >
@@ -57,11 +57,11 @@ export default function Footer() {
               </li>
               <li>
                 <a
-                  href="mailto:info@raushancleaning.com"
+                  href="mailto:info@allencleaning.com"
                   className="flex items-start gap-3 text-gray-400 hover:text-white transition-colors"
                 >
                   <Mail className="w-5 h-5 mt-0.5 text-primary" />
-                  <span>info@raushancleaning.com</span>
+                  <span>info@allencleaning.com</span>
                 </a>
               </li>
               <li className="flex items-start gap-3 text-gray-400">
@@ -110,7 +110,7 @@ export default function Footer() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <p className="text-gray-500 text-sm">
-              © {currentYear} Raushan Cleaning. All rights reserved.
+              © {currentYear} AllenCleaning. All rights reserved.
             </p>
             <div className="flex gap-6 text-sm">
               <span className="text-gray-500 hover:text-white transition-colors cursor-pointer">

@@ -15,10 +15,10 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://raushancleaning.vercel.app'),
+  metadataBase: new URL('https://allencleaning.vercel.app'),
   title: {
-    default: 'Raushan Cleaning | Professional Cleaning Services in Pleasanton, CA',
-    template: '%s | Raushan Cleaning',
+    default: 'AllenCleaning | Professional Cleaning Services in Pleasanton, CA',
+    template: '%s | AllenCleaning',
   },
   description: 'Professional residential and commercial cleaning services in Pleasanton, California. We offer regular cleaning, deep cleaning, move-in/move-out cleaning, post-construction cleaning, and office cleaning. Get a free estimate today!',
   keywords: [
@@ -33,9 +33,9 @@ export const metadata: Metadata = {
     'professional cleaners near me',
     'maid service Pleasanton California',
   ],
-  authors: [{ name: 'Raushan Cleaning' }],
-  creator: 'Raushan Cleaning',
-  publisher: 'Raushan Cleaning',
+  authors: [{ name: 'AllenCleaning' }],
+  creator: 'AllenCleaning',
+  publisher: 'AllenCleaning',
   formatDetection: {
     email: false,
     address: false,
@@ -44,22 +44,22 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     locale: 'en_US',
-    url: 'https://raushancleaning.vercel.app',
-    siteName: 'Raushan Cleaning',
-    title: 'Raushan Cleaning | Professional Cleaning Services in Pleasanton, CA',
+    url: 'https://allencleaning.vercel.app',
+    siteName: 'AllenCleaning',
+    title: 'AllenCleaning | Professional Cleaning Services in Pleasanton, CA',
     description: 'Professional residential and commercial cleaning services in Pleasanton, California. Regular cleaning, deep cleaning, move-in/move-out, and more. Get a free estimate!',
     images: [
       {
         url: '/og-image.png',
         width: 1200,
         height: 630,
-        alt: 'Raushan Cleaning - Professional Cleaning Services',
+        alt: 'AllenCleaning - Professional Cleaning Services',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Raushan Cleaning | Professional Cleaning Services in Pleasanton, CA',
+    title: 'AllenCleaning | Professional Cleaning Services in Pleasanton, CA',
     description: 'Professional residential and commercial cleaning services in Pleasanton, California. Get a free estimate today!',
     images: ['/og-image.png'],
   },
@@ -83,10 +83,10 @@ export const metadata: Metadata = {
 const jsonLd = {
   '@context': 'https://schema.org',
   '@type': 'LocalBusiness',
-  '@id': 'https://raushancleaning.vercel.app',
-  name: 'Raushan Cleaning',
+  '@id': 'https://allencleaning.vercel.app',
+  name: 'AllenCleaning',
   description: 'Professional residential and commercial cleaning services in Pleasanton, California.',
-  url: 'https://raushancleaning.vercel.app',
+  url: 'https://allencleaning.vercel.app',
   telephone: '+1-732-372-3329',
   areaServed: {
     '@type': 'City',
@@ -122,7 +122,7 @@ const jsonLd = {
     },
   ],
   priceRange: '$$',
-  image: 'https://raushancleaning.vercel.app/og-image.png',
+  image: 'https://allencleaning.vercel.app/og-image.png',
   sameAs: [],
   hasOfferCatalog: {
     '@type': 'OfferCatalog',
