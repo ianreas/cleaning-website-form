@@ -30,6 +30,9 @@ yarn-error.log*
 # Vercel
 .vercel
 
+# Data storage (estimates)
+/data/estimates.json
+
 # TypeScript
 *.tsbuildinfo
 next-env.d.ts

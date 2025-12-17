@@ -1,12 +1,12 @@
 # Raushan Cleaning - Professional Cleaning Service Website
 
-A modern, SEO-optimized website for Raushan Cleaning, a professional cleaning service based in Pleasanton, California. Built with Next.js 14 and deployed on Vercel.
+A modern, SEO-optimized website for Raushan Cleaning, a professional cleaning service based in Pleasanton, California. Built with Next.js 16 and deployed on Vercel.
 
 ## Features
 
 - **Beautiful Landing Page** - Warm, welcoming design with earth tones
 - **Estimate Request Form** - Comprehensive form with all service options
-- **SMS Notifications** - Instant Twilio SMS alerts when customers request estimates
+- **Admin Dashboard** - View all customer requests at `/admin`
 - **SEO Optimized** - Local business schema, meta tags, and Open Graph support
 - **Mobile Responsive** - Perfect experience on all devices
 - **Fast Loading** - Optimized for Core Web Vitals
@@ -21,10 +21,9 @@ A modern, SEO-optimized website for Raushan Cleaning, a professional cleaning se
 
 ## Tech Stack
 
-- **Framework**: Next.js 14 (App Router)
+- **Framework**: Next.js 16 (App Router)
 - **Styling**: Tailwind CSS
 - **Forms**: React Hook Form + Zod validation
-- **SMS**: Twilio
 - **Deployment**: Vercel
 
 ## Getting Started
@@ -32,62 +31,50 @@ A modern, SEO-optimized website for Raushan Cleaning, a professional cleaning se
 ### Prerequisites
 
 - Node.js 18+ installed
-- A Twilio account (for SMS notifications)
 
 ### Installation
 
 1. **Clone the repository**
+
    ```bash
    git clone <your-repo-url>
    cd cleaning-website-form
    ```
 
 2. **Install dependencies**
+
    ```bash
    npm install
    ```
 
-3. **Set up environment variables**
-   
-   Copy the example environment file:
-   ```bash
-   cp .env.example .env.local
-   ```
-   
-   Then edit `.env.local` with your Twilio credentials:
-   ```
-   TWILIO_ACCOUNT_SID=your_account_sid
-   TWILIO_AUTH_TOKEN=your_auth_token
-   TWILIO_PHONE_NUMBER=+1234567890
-   RECIPIENT_PHONE_NUMBER=+16469886601
-   ```
+3. **Run the development server**
 
-4. **Run the development server**
    ```bash
    npm run dev
    ```
-   
+
    Open [http://localhost:3000](http://localhost:3000) to see the website.
 
-## Setting Up Twilio
+## Admin Dashboard
 
-1. **Create a Twilio Account**
-   - Go to [twilio.com](https://www.twilio.com) and sign up
-   - Verify your phone number
+Access the admin dashboard at `/admin` to view all estimate requests.
 
-2. **Get Your Credentials**
-   - In the [Twilio Console](https://console.twilio.com/), find your:
-     - Account SID
-     - Auth Token
-   
-3. **Get a Phone Number**
-   - Go to Phone Numbers → Manage → Buy a number
-   - Choose a number with SMS capability
-   - Note: Twilio offers a free trial with $15 credit
+### Features:
 
-4. **Verify Recipient Number (Trial accounts only)**
-   - If using a trial account, verify the recipient phone number at:
-   - Phone Numbers → Manage → Verified Caller IDs
+- **View all requests** - See customer details, service type, and preferences
+- **New request alerts** - New submissions are highlighted
+- **Auto-refresh** - Automatically updates every 30 seconds
+- **Mark as read** - Clear the "new" indicator on viewed requests
+- **Delete requests** - Remove old or spam requests
+- **Mobile-friendly** - Check requests from your phone
+
+### How to use:
+
+1. Bookmark `yourdomain.vercel.app/admin`
+2. Check periodically for new requests
+3. Click on a request to expand and see full details
+4. Tap the phone number to call directly
+5. Tap the email to send a reply
 
 ## Deployment to Vercel
 
@@ -99,17 +86,12 @@ A modern, SEO-optimized website for Raushan Cleaning, a professional cleaning se
 
 3. Click "New Project" and import your repository
 
-4. Add environment variables in the Vercel dashboard:
-   - `TWILIO_ACCOUNT_SID`
-   - `TWILIO_AUTH_TOKEN`
-   - `TWILIO_PHONE_NUMBER`
-   - `RECIPIENT_PHONE_NUMBER`
-
-5. Click "Deploy"
+4. Click "Deploy" - No environment variables needed!
 
 ### Option 2: Deploy via CLI
 
 1. Install Vercel CLI:
+
    ```bash
    npm i -g vercel
    ```
@@ -119,8 +101,6 @@ A modern, SEO-optimized website for Raushan Cleaning, a professional cleaning se
    vercel
    ```
 
-3. Add environment variables when prompted or via the dashboard
-
 ## Project Structure
 
 ```
@@ -128,9 +108,13 @@ A modern, SEO-optimized website for Raushan Cleaning, a professional cleaning se
 │   ├── layout.tsx          # Root layout with SEO metadata
 │   ├── page.tsx            # Main landing page
 │   ├── globals.css         # Global styles and Tailwind
+│   ├── admin/
+│   │   └── page.tsx        # Admin dashboard
 │   ├── api/
-│   │   └── submit-estimate/
-│   │       └── route.ts    # Twilio SMS endpoint
+│   │   ├── submit-estimate/
+│   │   │   └── route.ts    # Form submission endpoint
+│   │   └── estimates/
+│   │       └── route.ts    # Get/manage estimates endpoint
 │   └── components/
 │       ├── Header.tsx      # Navigation header
 │       ├── Hero.tsx        # Hero section
@@ -139,11 +123,19 @@ A modern, SEO-optimized website for Raushan Cleaning, a professional cleaning se
 │       ├── EstimateForm.tsx# Estimate request form
 │       └── Footer.tsx      # Footer with contact info
 ├── lib/
-│   └── twilio.ts           # Twilio client configuration
-├── .env.example            # Environment variables template
+│   └── estimates-store.ts  # Data storage utilities
+├── data/
+│   └── estimates.json      # Local data storage (dev only)
 ├── tailwind.config.ts      # Tailwind configuration
 └── package.json
 ```
+
+## Data Storage
+
+- **Development**: Data is stored in `data/estimates.json`
+- **Production (Vercel)**: Data is stored in `/tmp/estimates.json`
+
+> **Note**: On Vercel's serverless functions, data in `/tmp` may be cleared on cold starts. For a business with high volume, consider upgrading to Vercel KV (free tier available) for persistent storage.
 
 ## Contact Information
 
