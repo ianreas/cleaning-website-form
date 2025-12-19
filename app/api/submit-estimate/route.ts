@@ -5,8 +5,8 @@ import { addEstimate } from '@/lib/estimates-store'
 // Form validation schema
 const estimateSchema = z.object({
   fullName: z.string().min(2),
-  email: z.string().email(),
-  phone: z.string().min(10),
+  email: z.string().optional(),
+  phone: z.string().optional(),
   address: z.string().min(5),
   numberOfRooms: z.string().min(1),
   numberOfBathrooms: z.string().min(1),
@@ -15,10 +15,17 @@ const estimateSchema = z.object({
   closetsBedroom: z.boolean().optional().default(false),
   closetsGarage: z.boolean().optional().default(false),
   closetsBasement: z.boolean().optional().default(false),
-  closetsOther: z.boolean().optional().default(false),
-  closetsOtherText: z.string().optional(),
   preferredDate: z.string().optional(),
+  preferredTime: z.string().optional(),
   additionalNotes: z.string().optional(),
+  estimatedPrice: z.number().optional(),
+}).refine((data) => {
+  // At least one contact method required
+  const hasPhone = data.phone && data.phone.length >= 10
+  const hasEmail = data.email && data.email.includes('@')
+  return hasPhone || hasEmail
+}, {
+  message: 'Please provide either a phone number or email address',
 })
 
 export async function POST(request: NextRequest) {
@@ -44,8 +51,8 @@ export async function POST(request: NextRequest) {
     // Store the estimate
     const estimate = await addEstimate({
       fullName: data.fullName,
-      email: data.email,
-      phone: data.phone,
+      email: data.email || '',
+      phone: data.phone || '',
       address: data.address,
       numberOfRooms: data.numberOfRooms,
       numberOfBathrooms: data.numberOfBathrooms,
@@ -54,13 +61,13 @@ export async function POST(request: NextRequest) {
       closetsBedroom: data.closetsBedroom || false,
       closetsGarage: data.closetsGarage || false,
       closetsBasement: data.closetsBasement || false,
-      closetsOther: data.closetsOther || false,
-      closetsOtherText: data.closetsOtherText,
       preferredDate: data.preferredDate,
+      preferredTime: data.preferredTime,
       additionalNotes: data.additionalNotes,
+      estimatedPrice: data.estimatedPrice,
     })
 
-    console.log('New estimate received:', estimate.id)
+    console.log('New estimate received:', estimate.id, '- Price: $' + data.estimatedPrice)
 
     return NextResponse.json({ 
       success: true, 

@@ -6,7 +6,6 @@ import {
   Trash2, 
   CheckCheck, 
   Clock, 
-  User, 
   Phone, 
   Mail, 
   MapPin,
@@ -18,7 +17,9 @@ import {
   ChevronDown,
   ChevronUp,
   Bell,
-  ArrowLeft
+  ArrowLeft,
+  DollarSign,
+  Package
 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -27,8 +28,8 @@ interface EstimateRequest {
   createdAt: string
   isNew: boolean
   fullName: string
-  email: string
-  phone: string
+  email?: string
+  phone?: string
   address: string
   numberOfRooms: string
   numberOfBathrooms: string
@@ -36,7 +37,9 @@ interface EstimateRequest {
   serviceTypeLabel: string
   closetAreas: string[]
   preferredDate?: string
+  preferredTime?: string
   additionalNotes?: string
+  estimatedPrice?: number
 }
 
 export default function AdminPage() {
@@ -295,6 +298,14 @@ export default function AdminPage() {
                     </div>
                     
                     <div className="flex items-center gap-3">
+                      {/* Estimated Price */}
+                      {estimate.estimatedPrice && (
+                        <div className="bg-primary/10 px-3 py-1 rounded-lg">
+                          <span className="text-lg font-bold text-primary">
+                            ${estimate.estimatedPrice}
+                          </span>
+                        </div>
+                      )}
                       <div className="text-right hidden sm:block">
                         <div className="flex items-center gap-1 text-sm text-gray-500">
                           <Clock className="w-4 h-4" />
@@ -351,20 +362,24 @@ export default function AdminPage() {
                           Contact Information
                         </h4>
                         <div className="space-y-2">
-                          <a 
-                            href={`tel:${estimate.phone}`}
-                            className="flex items-center gap-3 text-gray-700 hover:text-primary transition-colors"
-                          >
-                            <Phone className="w-5 h-5 text-gray-400" />
-                            {estimate.phone}
-                          </a>
-                          <a 
-                            href={`mailto:${estimate.email}`}
-                            className="flex items-center gap-3 text-gray-700 hover:text-primary transition-colors"
-                          >
-                            <Mail className="w-5 h-5 text-gray-400" />
-                            {estimate.email}
-                          </a>
+                          {estimate.phone && (
+                            <a 
+                              href={`tel:${estimate.phone}`}
+                              className="flex items-center gap-3 text-gray-700 hover:text-primary transition-colors"
+                            >
+                              <Phone className="w-5 h-5 text-gray-400" />
+                              {estimate.phone}
+                            </a>
+                          )}
+                          {estimate.email && (
+                            <a 
+                              href={`mailto:${estimate.email}`}
+                              className="flex items-center gap-3 text-gray-700 hover:text-primary transition-colors"
+                            >
+                              <Mail className="w-5 h-5 text-gray-400" />
+                              {estimate.email}
+                            </a>
+                          )}
                           <div className="flex items-start gap-3 text-gray-700">
                             <MapPin className="w-5 h-5 text-gray-400 flex-shrink-0 mt-0.5" />
                             {estimate.address}
@@ -378,6 +393,12 @@ export default function AdminPage() {
                           Service Details
                         </h4>
                         <div className="space-y-2 text-gray-700">
+                          {estimate.estimatedPrice && (
+                            <div className="flex items-center gap-3">
+                              <DollarSign className="w-5 h-5 text-primary" />
+                              <span><strong>Estimated Price:</strong> <span className="text-primary font-bold">${estimate.estimatedPrice}</span></span>
+                            </div>
+                          )}
                           <div className="flex items-center gap-3">
                             <Sparkles className="w-5 h-5 text-gray-400" />
                             <span><strong>Service:</strong> {estimate.serviceTypeLabel}</span>
@@ -392,8 +413,8 @@ export default function AdminPage() {
                           </div>
                           {estimate.closetAreas.length > 0 && (
                             <div className="flex items-start gap-3">
-                              <User className="w-5 h-5 text-gray-400 flex-shrink-0 mt-0.5" />
-                              <span><strong>Closets/Cabinets:</strong> {estimate.closetAreas.join(', ')}</span>
+                              <Package className="w-5 h-5 text-gray-400 flex-shrink-0 mt-0.5" />
+                              <span><strong>Add-ons:</strong> {estimate.closetAreas.join(', ')}</span>
                             </div>
                           )}
                         </div>
@@ -404,9 +425,17 @@ export default function AdminPage() {
                         <h4 className="text-sm font-semibold text-gray-900 uppercase tracking-wider">
                           Scheduling
                         </h4>
-                        <div className="flex items-center gap-3 text-gray-700">
-                          <Calendar className="w-5 h-5 text-gray-400" />
-                          <span><strong>Preferred Date:</strong> {formatPreferredDate(estimate.preferredDate)}</span>
+                        <div className="space-y-2 text-gray-700">
+                          <div className="flex items-center gap-3">
+                            <Calendar className="w-5 h-5 text-gray-400" />
+                            <span><strong>Preferred Date:</strong> {formatPreferredDate(estimate.preferredDate)}</span>
+                          </div>
+                          {estimate.preferredTime && (
+                            <div className="flex items-center gap-3">
+                              <Clock className="w-5 h-5 text-gray-400" />
+                              <span><strong>Preferred Time:</strong> {estimate.preferredTime}</span>
+                            </div>
+                          )}
                         </div>
                       </div>
 

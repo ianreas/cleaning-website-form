@@ -38,7 +38,7 @@ export default function Hero() {
           <div className="inline-flex items-center gap-2 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full shadow-md mb-8 animate-fade-in-up">
             <Sparkles className="w-4 h-4 text-accent" />
             <span className="text-sm font-medium text-gray-700">
-              Serving Pleasanton, California
+              Serving Bay Area, California
             </span>
           </div>
 

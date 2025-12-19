@@ -17,21 +17,21 @@ const inter = Inter({
 export const metadata: Metadata = {
   metadataBase: new URL('https://allencleaning.vercel.app'),
   title: {
-    default: 'AllenCleaning | Professional Cleaning Services in Pleasanton, CA',
+    default: 'AllenCleaning | Professional Cleaning Services in Bay Area, CA',
     template: '%s | AllenCleaning',
   },
-  description: 'Professional residential and commercial cleaning services in Pleasanton, California. We offer regular cleaning, deep cleaning, move-in/move-out cleaning, post-construction cleaning, and office cleaning. Get a free estimate today!',
+  description: 'Professional residential and commercial cleaning services in Bay Area, California. We offer regular cleaning, deep cleaning, move-in/move-out cleaning, post-construction cleaning, and office cleaning. Get a free estimate today!',
   keywords: [
-    'cleaning service Pleasanton',
-    'house cleaning Pleasanton CA',
-    'residential cleaning Pleasanton',
-    'commercial cleaning Pleasanton',
+    'cleaning service Bay Area',
+    'house cleaning Bay Area CA',
+    'residential cleaning Bay Area',
+    'commercial cleaning Bay Area',
     'deep cleaning service',
     'move in move out cleaning',
     'post construction cleaning',
-    'office cleaning Pleasanton',
+    'office cleaning Bay Area',
     'professional cleaners near me',
-    'maid service Pleasanton California',
+    'maid service Bay Area California',
   ],
   authors: [{ name: 'AllenCleaning' }],
   creator: 'AllenCleaning',
@@ -46,8 +46,8 @@ export const metadata: Metadata = {
     locale: 'en_US',
     url: 'https://allencleaning.vercel.app',
     siteName: 'AllenCleaning',
-    title: 'AllenCleaning | Professional Cleaning Services in Pleasanton, CA',
-    description: 'Professional residential and commercial cleaning services in Pleasanton, California. Regular cleaning, deep cleaning, move-in/move-out, and more. Get a free estimate!',
+    title: 'AllenCleaning | Professional Cleaning Services in Bay Area, CA',
+    description: 'Professional residential and commercial cleaning services in Bay Area, California. Regular cleaning, deep cleaning, move-in/move-out, and more. Get a free estimate!',
     images: [
       {
         url: '/og-image.png',
@@ -59,8 +59,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'AllenCleaning | Professional Cleaning Services in Pleasanton, CA',
-    description: 'Professional residential and commercial cleaning services in Pleasanton, California. Get a free estimate today!',
+    title: 'AllenCleaning | Professional Cleaning Services in Bay Area, CA',
+    description: 'Professional residential and commercial cleaning services in Bay Area, California. Get a free estimate today!',
     images: ['/og-image.png'],
   },
   robots: {
@@ -85,12 +85,12 @@ const jsonLd = {
   '@type': 'LocalBusiness',
   '@id': 'https://allencleaning.vercel.app',
   name: 'AllenCleaning',
-  description: 'Professional residential and commercial cleaning services in Pleasanton, California.',
+  description: 'Professional residential and commercial cleaning services in Bay Area, California.',
   url: 'https://allencleaning.vercel.app',
   telephone: '+1-732-372-3329',
   areaServed: {
     '@type': 'City',
-    name: 'Pleasanton',
+    name: 'Bay Area',
     containedInPlace: {
       '@type': 'State',
       name: 'California',
@@ -98,7 +98,7 @@ const jsonLd = {
   },
   address: {
     '@type': 'PostalAddress',
-    addressLocality: 'Pleasanton',
+    addressLocality: 'Bay Area',
     addressRegion: 'CA',
     addressCountry: 'US',
   },

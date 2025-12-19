@@ -1,6 +1,6 @@
 # AllenCleaning - Professional Cleaning Service Website
 
-A modern, SEO-optimized website for AllenCleaning, a professional cleaning service based in Pleasanton, California. Built with Next.js 16 and deployed on Vercel.
+A modern, SEO-optimized website for AllenCleaning, a professional cleaning service based in Bay Area, California. Built with Next.js 16 and deployed on Vercel.
 
 ## Features
 
@@ -141,7 +141,7 @@ Access the admin dashboard at `/admin` to view all estimate requests.
 
 - **Business**: AllenCleaning
 - **Phone**: (732) 372-3329
-- **Service Area**: Pleasanton, California
+- **Service Area**: Bay Area, California
 
 ## License
 

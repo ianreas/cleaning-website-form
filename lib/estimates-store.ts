@@ -6,8 +6,8 @@ export interface EstimateRequest {
   createdAt: string
   isNew: boolean
   fullName: string
-  email: string
-  phone: string
+  email?: string
+  phone?: string
   address: string
   numberOfRooms: string
   numberOfBathrooms: string
@@ -17,11 +17,11 @@ export interface EstimateRequest {
   closetsBedroom: boolean
   closetsGarage: boolean
   closetsBasement: boolean
-  closetsOther: boolean
-  closetsOtherText?: string
   closetAreas: string[]
   preferredDate?: string
+  preferredTime?: string
   additionalNotes?: string
+  estimatedPrice?: number
 }
 
 // Map service type codes to readable names
@@ -93,9 +93,6 @@ export async function addEstimate(data: Omit<EstimateRequest, 'id' | 'createdAt'
   if (data.closetsBedroom) closetAreas.push('Bedroom')
   if (data.closetsGarage) closetAreas.push('Garage')
   if (data.closetsBasement) closetAreas.push('Basement')
-  if (data.closetsOther && data.closetsOtherText) {
-    closetAreas.push(data.closetsOtherText)
-  }
   
   const estimate: EstimateRequest = {
     ...data,

@@ -20,7 +20,7 @@ export default function Footer() {
               </span>
             </div>
             <p className="text-gray-400 max-w-md mb-6">
-              Professional cleaning services in Pleasanton, California. 
+              Professional cleaning services in Bay Area, California. 
               We bring sparkle and freshness to your home and office with 
               our dedicated team and eco-friendly products.
             </p>
@@ -66,7 +66,7 @@ export default function Footer() {
               </li>
               <li className="flex items-start gap-3 text-gray-400">
                 <MapPin className="w-5 h-5 mt-0.5 text-primary flex-shrink-0" />
-                <span>Serving Pleasanton, CA and surrounding areas</span>
+                <span>Serving Bay Area, CA and surrounding areas</span>
               </li>
             </ul>
           </div>

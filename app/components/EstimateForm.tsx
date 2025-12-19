@@ -1,437 +1,694 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Send, Loader2, CheckCircle2, AlertCircle } from 'lucide-react'
+import { 
+  Send, 
+  Loader2, 
+  CheckCircle2, 
+  AlertCircle,
+  Calculator,
+  ArrowRight,
+  ArrowLeft,
+  DollarSign,
+  Home,
+  Bath,
+  Sparkles
+} from 'lucide-react'
 
-// Form validation schema
-const estimateSchema = z.object({
-  // Customer Info
-  fullName: z.string().min(2, 'Name must be at least 2 characters'),
-  email: z.string().email('Please enter a valid email'),
-  phone: z.string().min(10, 'Please enter a valid phone number'),
-  address: z.string().min(5, 'Please enter your full address'),
-  
-  // Property Details
+// Pricing configuration
+const PRICING = {
+  base: {
+    regular: 150,
+    deep: 275,
+    move: 375,
+    construction: 475,
+    office: 225,
+  },
+  perRoom: {
+    regular: 20,
+    deep: 30,
+    move: 25,
+    construction: 40,
+    office: 25,
+  },
+  perBathroom: {
+    regular: 20,
+    deep: 35,
+    move: 0, // included
+    construction: 0, // included
+    office: 25,
+  },
+  addons: {
+    kitchen: 50,
+    bedroom: 40,
+    garage: 60,
+    basement: 75,
+  },
+  // Base includes 2 rooms, additional rooms charged extra
+  baseRoomsIncluded: 2,
+}
+
+// Step 1: Property details schema
+const propertySchema = z.object({
   numberOfRooms: z.string().min(1, 'Please select number of rooms'),
   numberOfBathrooms: z.string().min(1, 'Please select number of bathrooms'),
-  
-  // Service Type
   serviceType: z.string().min(1, 'Please select a service type'),
-  
-  // Closets/Cabinets Cleaning
   closetsKitchen: z.boolean().optional(),
   closetsBedroom: z.boolean().optional(),
   closetsGarage: z.boolean().optional(),
   closetsBasement: z.boolean().optional(),
-  closetsOther: z.boolean().optional(),
-  closetsOtherText: z.string().optional(),
-  
-  // Scheduling
-  preferredDate: z.string().optional(),
-  additionalNotes: z.string().optional(),
 })
 
-type EstimateFormData = z.infer<typeof estimateSchema>
+// Step 3: Contact schema (phone OR email required)
+const contactSchema = z.object({
+  fullName: z.string().min(2, 'Name must be at least 2 characters'),
+  phone: z.string().optional(),
+  email: z.string().optional(),
+  address: z.string().min(5, 'Please enter your address'),
+  preferredDate: z.string().optional(),
+  preferredTime: z.string().optional(),
+  additionalNotes: z.string().optional(),
+}).refine((data) => {
+  // At least one contact method required
+  const hasPhone = data.phone && data.phone.length >= 10
+  const hasEmail = data.email && data.email.includes('@')
+  return hasPhone || hasEmail
+}, {
+  message: 'Please provide either a phone number or email address',
+  path: ['phone'],
+})
 
-const serviceTypes = [
-  { value: 'regular', label: 'Regular Cleaning' },
-  { value: 'deep', label: 'Deep Cleaning' },
-  { value: 'move', label: 'Move-in / Move-out' },
-  { value: 'construction', label: 'Post-construction Cleaning' },
-  { value: 'office', label: 'Office Cleaning' },
-]
+type PropertyData = z.infer<typeof propertySchema>
+type ContactData = z.infer<typeof contactSchema>
 
-const roomOptions = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10+']
-const bathroomOptions = ['1', '2', '3', '4', '5', '6+']
+const serviceLabels: Record<string, string> = {
+  regular: 'Regular Cleaning',
+  deep: 'Deep Cleaning',
+  move: 'Move-in / Move-out',
+  construction: 'Post-construction',
+  office: 'Office Cleaning',
+}
 
 export default function EstimateForm() {
-  const [submitStatus, setSubmitStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
-  const [errorMessage, setErrorMessage] = useState('')
+  const [step, setStep] = useState(1)
+  const [propertyData, setPropertyData] = useState<PropertyData | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle')
 
-  const {
-    register,
-    handleSubmit,
-    watch,
-    reset,
-    formState: { errors },
-  } = useForm<EstimateFormData>({
-    resolver: zodResolver(estimateSchema),
+  // Step 1 form
+  const propertyForm = useForm<PropertyData>({
+    resolver: zodResolver(propertySchema),
     defaultValues: {
+      numberOfRooms: '',
+      numberOfBathrooms: '',
+      serviceType: '',
       closetsKitchen: false,
       closetsBedroom: false,
       closetsGarage: false,
       closetsBasement: false,
-      closetsOther: false,
     },
   })
 
-  const closetsOtherChecked = watch('closetsOther')
+  // Step 3 form
+  const contactForm = useForm<ContactData>({
+    resolver: zodResolver(contactSchema),
+    defaultValues: {
+      fullName: '',
+      phone: '',
+      email: '',
+      address: '',
+      preferredDate: '',
+      preferredTime: '',
+      additionalNotes: '',
+    },
+  })
 
-  const onSubmit = async (data: EstimateFormData) => {
-    setSubmitStatus('loading')
-    setErrorMessage('')
+  // Calculate estimate
+  const estimate = useMemo(() => {
+    if (!propertyData) return null
+
+    const serviceType = propertyData.serviceType as keyof typeof PRICING.base
+    const rooms = parseInt(propertyData.numberOfRooms) || 0
+    const bathrooms = parseInt(propertyData.numberOfBathrooms) || 0
+
+    // Base price
+    let total = PRICING.base[serviceType] || 0
+
+    // Additional rooms (beyond base included)
+    const extraRooms = Math.max(0, rooms - PRICING.baseRoomsIncluded)
+    total += extraRooms * (PRICING.perRoom[serviceType] || 0)
+
+    // Bathrooms
+    total += bathrooms * (PRICING.perBathroom[serviceType] || 0)
+
+    // Add-ons
+    if (propertyData.closetsKitchen) total += PRICING.addons.kitchen
+    if (propertyData.closetsBedroom) total += PRICING.addons.bedroom
+    if (propertyData.closetsGarage) total += PRICING.addons.garage
+    if (propertyData.closetsBasement) total += PRICING.addons.basement
+
+    return {
+      base: PRICING.base[serviceType],
+      rooms: extraRooms * (PRICING.perRoom[serviceType] || 0),
+      bathrooms: bathrooms * (PRICING.perBathroom[serviceType] || 0),
+      addons: (propertyData.closetsKitchen ? PRICING.addons.kitchen : 0) +
+              (propertyData.closetsBedroom ? PRICING.addons.bedroom : 0) +
+              (propertyData.closetsGarage ? PRICING.addons.garage : 0) +
+              (propertyData.closetsBasement ? PRICING.addons.basement : 0),
+      total,
+      extraRooms,
+      bathroomCount: bathrooms,
+      serviceType,
+    }
+  }, [propertyData])
+
+  // Step 1: Submit property details
+  const onPropertySubmit = (data: PropertyData) => {
+    setPropertyData(data)
+    setStep(2)
+  }
+
+  // Step 3: Submit contact info
+  const onContactSubmit = async (data: ContactData) => {
+    if (!propertyData || !estimate) return
+
+    setIsSubmitting(true)
+    setSubmitStatus('idle')
 
     try {
       const response = await fetch('/api/submit-estimate', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...propertyData,
+          ...data,
+          estimatedPrice: estimate.total,
+        }),
       })
 
-      const result = await response.json()
-
-      if (!response.ok) {
-        throw new Error(result.error || 'Failed to submit estimate request')
-      }
+      if (!response.ok) throw new Error('Submission failed')
 
       setSubmitStatus('success')
-      reset()
-      
-      // Reset success message after 5 seconds
-      setTimeout(() => {
-        setSubmitStatus('idle')
-      }, 5000)
-    } catch (error) {
+      setStep(4)
+    } catch {
       setSubmitStatus('error')
-      setErrorMessage(error instanceof Error ? error.message : 'Something went wrong. Please try again.')
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
+  const resetForm = () => {
+    setStep(1)
+    setPropertyData(null)
+    setSubmitStatus('idle')
+    propertyForm.reset()
+    contactForm.reset()
+  }
+
   return (
-    <section id="estimate" className="py-20 bg-cream">
+    <section id="estimate" className="py-20 bg-white">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Section Header */}
+        {/* Header */}
         <div className="text-center mb-12">
-          <span className="inline-block text-accent font-semibold text-sm uppercase tracking-wider mb-4">
+          <span className="inline-block px-4 py-1.5 bg-primary/10 text-primary text-sm font-medium rounded-full mb-4">
             Free Estimate
           </span>
-          <h2 className="section-title mb-4">
-            Get Your Cleaning Quote
+          <h2 className="text-3xl sm:text-4xl font-heading font-bold text-gray-900 mb-4">
+            Get Your Instant Quote
           </h2>
-          <p className="section-subtitle mx-auto">
-            Fill out the form below and we&apos;ll get back to you with a personalized 
-            estimate for your cleaning needs.
+          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+            {step === 1 && "Tell us about your space and we'll calculate your estimate instantly."}
+            {step === 2 && "Here's your personalized cleaning estimate!"}
+            {step === 3 && "Almost done! How can we reach you?"}
+            {step === 4 && "Thank you! We'll be in touch soon."}
           </p>
         </div>
 
-        {/* Form */}
-        <form
-          onSubmit={handleSubmit(onSubmit)}
-          className="bg-white rounded-3xl shadow-xl p-8 md:p-12"
-        >
-          {/* Success Message */}
-          {submitStatus === 'success' && (
-            <div className="mb-8 p-4 bg-green-50 border border-green-200 rounded-xl flex items-center gap-3">
-              <CheckCircle2 className="w-6 h-6 text-green-600 flex-shrink-0" />
-              <div>
-                <p className="font-semibold text-green-800">Request Submitted Successfully!</p>
-                <p className="text-green-700 text-sm">We&apos;ll contact you shortly with your estimate.</p>
+        {/* Progress Steps */}
+        <div className="flex items-center justify-center mb-10">
+          {[1, 2, 3].map((s) => (
+            <div key={s} className="flex items-center">
+              <div
+                className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold transition-all ${
+                  step >= s
+                    ? 'bg-primary text-white'
+                    : 'bg-gray-200 text-gray-500'
+                } ${step === s ? 'ring-4 ring-primary/20' : ''}`}
+              >
+                {step > s ? <CheckCircle2 className="w-5 h-5" /> : s}
               </div>
+              {s < 3 && (
+                <div
+                  className={`w-16 sm:w-24 h-1 mx-2 rounded ${
+                    step > s ? 'bg-primary' : 'bg-gray-200'
+                  }`}
+                />
+              )}
             </div>
-          )}
+          ))}
+        </div>
 
-          {/* Error Message */}
-          {submitStatus === 'error' && (
-            <div className="mb-8 p-4 bg-red-50 border border-red-200 rounded-xl flex items-center gap-3">
-              <AlertCircle className="w-6 h-6 text-red-600 flex-shrink-0" />
-              <div>
-                <p className="font-semibold text-red-800">Submission Failed</p>
-                <p className="text-red-700 text-sm">{errorMessage}</p>
-              </div>
-            </div>
-          )}
-
-          {/* Customer Information */}
-          <div className="mb-10">
-            <h3 className="font-heading text-xl font-bold text-gray-900 mb-6 pb-2 border-b border-cream-200">
-              Contact Information
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label htmlFor="fullName" className="form-label">
-                  Full Name <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  id="fullName"
-                  {...register('fullName')}
-                  className={`input-field ${errors.fullName ? 'border-red-400 focus:border-red-500' : ''}`}
-                  placeholder="John Doe"
-                />
-                {errors.fullName && (
-                  <p className="mt-1 text-sm text-red-500">{errors.fullName.message}</p>
-                )}
-              </div>
-
-              <div>
-                <label htmlFor="email" className="form-label">
-                  Email <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="email"
-                  id="email"
-                  {...register('email')}
-                  className={`input-field ${errors.email ? 'border-red-400 focus:border-red-500' : ''}`}
-                  placeholder="john@example.com"
-                />
-                {errors.email && (
-                  <p className="mt-1 text-sm text-red-500">{errors.email.message}</p>
-                )}
-              </div>
-
-              <div>
-                <label htmlFor="phone" className="form-label">
-                  Phone Number <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="tel"
-                  id="phone"
-                  {...register('phone')}
-                  className={`input-field ${errors.phone ? 'border-red-400 focus:border-red-500' : ''}`}
-                  placeholder="(555) 123-4567"
-                />
-                {errors.phone && (
-                  <p className="mt-1 text-sm text-red-500">{errors.phone.message}</p>
-                )}
-              </div>
-
-              <div>
-                <label htmlFor="address" className="form-label">
-                  Address <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  id="address"
-                  {...register('address')}
-                  className={`input-field ${errors.address ? 'border-red-400 focus:border-red-500' : ''}`}
-                  placeholder="123 Main St, Pleasanton, CA"
-                />
-                {errors.address && (
-                  <p className="mt-1 text-sm text-red-500">{errors.address.message}</p>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Property Details */}
-          <div className="mb-10">
-            <h3 className="font-heading text-xl font-bold text-gray-900 mb-6 pb-2 border-b border-cream-200">
-              Property Details
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label htmlFor="numberOfRooms" className="form-label">
-                  Number of Rooms <span className="text-red-500">*</span>
-                </label>
-                <select
-                  id="numberOfRooms"
-                  {...register('numberOfRooms')}
-                  className={`select-field ${errors.numberOfRooms ? 'border-red-400 focus:border-red-500' : ''}`}
-                >
-                  <option value="">Select rooms</option>
-                  {roomOptions.map((option) => (
-                    <option key={option} value={option}>
-                      {option} {option === '10+' ? 'rooms' : option === '1' ? 'room' : 'rooms'}
-                    </option>
+        {/* Step 1: Property Details */}
+        {step === 1 && (
+          <form onSubmit={propertyForm.handleSubmit(onPropertySubmit)} className="space-y-8">
+            <div className="bg-cream rounded-2xl p-6 sm:p-8 shadow-sm border border-gray-100">
+              {/* Service Type */}
+              <div className="mb-8">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-primary" />
+                  What Type of Cleaning Do You Need?
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {Object.entries(serviceLabels).map(([value, label]) => (
+                    <label
+                      key={value}
+                      className={`relative flex items-center justify-center p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                        propertyForm.watch('serviceType') === value
+                          ? 'border-primary bg-primary/5 text-primary'
+                          : 'border-gray-200 hover:border-primary/50'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        value={value}
+                        {...propertyForm.register('serviceType')}
+                        className="sr-only"
+                      />
+                      <span className="font-medium text-center">{label}</span>
+                      <span className="absolute top-2 right-2 text-xs text-gray-500">
+                        from ${PRICING.base[value as keyof typeof PRICING.base]}
+                      </span>
+                    </label>
                   ))}
-                </select>
-                {errors.numberOfRooms && (
-                  <p className="mt-1 text-sm text-red-500">{errors.numberOfRooms.message}</p>
+                </div>
+                {propertyForm.formState.errors.serviceType && (
+                  <p className="text-red-500 text-sm mt-2">
+                    {propertyForm.formState.errors.serviceType.message}
+                  </p>
                 )}
               </div>
 
+              {/* Rooms and Bathrooms */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
+                <div>
+                  <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                    <Home className="w-4 h-4" />
+                    Number of Rooms *
+                  </label>
+                  <select
+                    {...propertyForm.register('numberOfRooms')}
+                    className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                  >
+                    <option value="">Select rooms</option>
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
+                      <option key={n} value={n}>
+                        {n} {n === 1 ? 'room' : 'rooms'}
+                        {n > PRICING.baseRoomsIncluded && ` (+$${(n - PRICING.baseRoomsIncluded) * 20})`}
+                      </option>
+                    ))}
+                  </select>
+                  {propertyForm.formState.errors.numberOfRooms && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {propertyForm.formState.errors.numberOfRooms.message}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                    <Bath className="w-4 h-4" />
+                    Number of Bathrooms *
+                  </label>
+                  <select
+                    {...propertyForm.register('numberOfBathrooms')}
+                    className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                  >
+                    <option value="">Select bathrooms</option>
+                    {[1, 2, 3, 4, 5, 6].map((n) => (
+                      <option key={n} value={n}>
+                        {n} {n === 1 ? 'bathroom' : 'bathrooms'}
+                      </option>
+                    ))}
+                  </select>
+                  {propertyForm.formState.errors.numberOfBathrooms && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {propertyForm.formState.errors.numberOfBathrooms.message}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Add-ons */}
               <div>
-                <label htmlFor="numberOfBathrooms" className="form-label">
-                  Number of Bathrooms <span className="text-red-500">*</span>
-                </label>
-                <select
-                  id="numberOfBathrooms"
-                  {...register('numberOfBathrooms')}
-                  className={`select-field ${errors.numberOfBathrooms ? 'border-red-400 focus:border-red-500' : ''}`}
-                >
-                  <option value="">Select bathrooms</option>
-                  {bathroomOptions.map((option) => (
-                    <option key={option} value={option}>
-                      {option} {option === '6+' ? 'bathrooms' : option === '1' ? 'bathroom' : 'bathrooms'}
-                    </option>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                  Add-ons: Inside Closets/Cabinets
+                </h3>
+                <p className="text-sm text-gray-500 mb-4">Optional - select areas that need extra attention</p>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {[
+                    { id: 'closetsKitchen', label: 'Kitchen', price: PRICING.addons.kitchen },
+                    { id: 'closetsBedroom', label: 'Bedroom', price: PRICING.addons.bedroom },
+                    { id: 'closetsGarage', label: 'Garage', price: PRICING.addons.garage },
+                    { id: 'closetsBasement', label: 'Basement', price: PRICING.addons.basement },
+                  ].map((addon) => (
+                    <label
+                      key={addon.id}
+                      className={`relative flex flex-col items-center p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                        propertyForm.watch(addon.id as keyof PropertyData)
+                          ? 'border-primary bg-primary/5'
+                          : 'border-gray-200 hover:border-primary/50'
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        {...propertyForm.register(addon.id as keyof PropertyData)}
+                        className="sr-only"
+                      />
+                      <span className="font-medium">{addon.label}</span>
+                      <span className="text-sm text-primary">+${addon.price}</span>
+                    </label>
                   ))}
-                </select>
-                {errors.numberOfBathrooms && (
-                  <p className="mt-1 text-sm text-red-500">{errors.numberOfBathrooms.message}</p>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Service Type */}
-          <div className="mb-10">
-            <h3 className="font-heading text-xl font-bold text-gray-900 mb-6 pb-2 border-b border-cream-200">
-              What Type of Cleaning Do You Need?
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {serviceTypes.map((service) => (
-                <label
-                  key={service.value}
-                  className="relative flex items-center cursor-pointer"
-                >
-                  <input
-                    type="radio"
-                    value={service.value}
-                    {...register('serviceType')}
-                    className="peer sr-only"
-                  />
-                  <div className="w-full p-4 rounded-xl border-2 border-cream-300 bg-white peer-checked:border-primary peer-checked:bg-primary-50 hover:border-secondary transition-all duration-200">
-                    <span className="font-medium text-gray-900 peer-checked:text-primary">
-                      {service.label}
-                    </span>
-                  </div>
-                </label>
-              ))}
-            </div>
-            {errors.serviceType && (
-              <p className="mt-2 text-sm text-red-500">{errors.serviceType.message}</p>
-            )}
-          </div>
-
-          {/* Closets/Cabinets Cleaning */}
-          <div className="mb-10">
-            <h3 className="font-heading text-xl font-bold text-gray-900 mb-2 pb-2 border-b border-cream-200">
-              Do You Need Cleaning Inside Closets/Cabinets?
-            </h3>
-            <p className="text-gray-500 text-sm mb-6">Select all areas that apply</p>
-            
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-              <label className="flex items-center gap-3 p-4 rounded-xl border-2 border-cream-300 bg-white hover:border-secondary cursor-pointer transition-all has-[:checked]:border-primary has-[:checked]:bg-primary-50">
-                <input
-                  type="checkbox"
-                  {...register('closetsKitchen')}
-                  className="checkbox-field"
-                />
-                <span className="font-medium text-gray-900">Kitchen</span>
-              </label>
-
-              <label className="flex items-center gap-3 p-4 rounded-xl border-2 border-cream-300 bg-white hover:border-secondary cursor-pointer transition-all has-[:checked]:border-primary has-[:checked]:bg-primary-50">
-                <input
-                  type="checkbox"
-                  {...register('closetsBedroom')}
-                  className="checkbox-field"
-                />
-                <span className="font-medium text-gray-900">Bedroom</span>
-              </label>
-
-              <label className="flex items-center gap-3 p-4 rounded-xl border-2 border-cream-300 bg-white hover:border-secondary cursor-pointer transition-all has-[:checked]:border-primary has-[:checked]:bg-primary-50">
-                <input
-                  type="checkbox"
-                  {...register('closetsGarage')}
-                  className="checkbox-field"
-                />
-                <span className="font-medium text-gray-900">Garage</span>
-              </label>
-
-              <label className="flex items-center gap-3 p-4 rounded-xl border-2 border-cream-300 bg-white hover:border-secondary cursor-pointer transition-all has-[:checked]:border-primary has-[:checked]:bg-primary-50">
-                <input
-                  type="checkbox"
-                  {...register('closetsBasement')}
-                  className="checkbox-field"
-                />
-                <span className="font-medium text-gray-900">Basement</span>
-              </label>
-
-              <label className="flex items-center gap-3 p-4 rounded-xl border-2 border-cream-300 bg-white hover:border-secondary cursor-pointer transition-all has-[:checked]:border-primary has-[:checked]:bg-primary-50">
-                <input
-                  type="checkbox"
-                  {...register('closetsOther')}
-                  className="checkbox-field"
-                />
-                <span className="font-medium text-gray-900">Other</span>
-              </label>
-            </div>
-
-            {/* Other area text field */}
-            {closetsOtherChecked && (
-              <div className="mt-4 animate-fade-in-up">
-                <label htmlFor="closetsOtherText" className="form-label">
-                  Please specify other area(s)
-                </label>
-                <input
-                  type="text"
-                  id="closetsOtherText"
-                  {...register('closetsOtherText')}
-                  className="input-field"
-                  placeholder="e.g., Attic, Laundry room, Pantry"
-                />
-              </div>
-            )}
-          </div>
-
-          {/* Scheduling */}
-          <div className="mb-10">
-            <h3 className="font-heading text-xl font-bold text-gray-900 mb-6 pb-2 border-b border-cream-200">
-              Scheduling Preferences
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label htmlFor="preferredDate" className="form-label">
-                  Preferred Date
-                </label>
-                <input
-                  type="date"
-                  id="preferredDate"
-                  {...register('preferredDate')}
-                  className="input-field"
-                  min={new Date().toISOString().split('T')[0]}
-                />
+                </div>
               </div>
             </div>
 
-            <div className="mt-6">
-              <label htmlFor="additionalNotes" className="form-label">
-                Additional Notes
-              </label>
-              <textarea
-                id="additionalNotes"
-                {...register('additionalNotes')}
-                rows={4}
-                className="input-field resize-none"
-                placeholder="Any special requests or information we should know..."
-              />
-            </div>
-          </div>
-
-          {/* Submit Button */}
-          <div className="flex justify-center">
             <button
               type="submit"
-              disabled={submitStatus === 'loading'}
-              className="btn-primary text-lg px-12 py-4 flex items-center gap-3 disabled:opacity-70 disabled:cursor-not-allowed"
+              className="w-full btn-primary flex items-center justify-center gap-2 text-lg py-4"
             >
-              {submitStatus === 'loading' ? (
-                <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  Submitting...
-                </>
-              ) : (
-                <>
-                  <Send className="w-5 h-5" />
-                  Get My Free Estimate
-                </>
-              )}
+              <Calculator className="w-5 h-5" />
+              Calculate My Estimate
+              <ArrowRight className="w-5 h-5" />
+            </button>
+          </form>
+        )}
+
+        {/* Step 2: Show Estimate */}
+        {step === 2 && estimate && propertyData && (
+          <div className="space-y-8">
+            <div className="bg-gradient-to-br from-primary to-primary-600 rounded-3xl p-8 sm:p-10 text-white shadow-xl">
+              <div className="text-center mb-8">
+                <p className="text-primary-100 mb-2">Your Estimated Price</p>
+                <div className="flex items-center justify-center gap-2">
+                  <DollarSign className="w-10 h-10 opacity-80" />
+                  <span className="text-6xl sm:text-7xl font-bold">{estimate.total}</span>
+                </div>
+                <p className="text-primary-100 mt-2">
+                  for {serviceLabels[estimate.serviceType]}
+                </p>
+              </div>
+
+              {/* Price Breakdown */}
+              <div className="bg-white/10 rounded-2xl p-6 backdrop-blur-sm">
+                <h4 className="font-semibold mb-4 text-lg">Price Breakdown</h4>
+                <div className="space-y-3">
+                  <div className="flex justify-between">
+                    <span>Base price ({serviceLabels[estimate.serviceType]})</span>
+                    <span>${estimate.base}</span>
+                  </div>
+                  {estimate.extraRooms > 0 && (
+                    <div className="flex justify-between">
+                      <span>Additional rooms ({estimate.extraRooms})</span>
+                      <span>+${estimate.rooms}</span>
+                    </div>
+                  )}
+                  {estimate.bathrooms > 0 && (
+                    <div className="flex justify-between">
+                      <span>Bathrooms ({estimate.bathroomCount})</span>
+                      <span>+${estimate.bathrooms}</span>
+                    </div>
+                  )}
+                  {estimate.addons > 0 && (
+                    <div className="flex justify-between">
+                      <span>Add-ons</span>
+                      <span>+${estimate.addons}</span>
+                    </div>
+                  )}
+                  <div className="border-t border-white/20 pt-3 flex justify-between font-bold text-lg">
+                    <span>Total</span>
+                    <span>${estimate.total}</span>
+                  </div>
+                </div>
+              </div>
+
+              <p className="text-center text-primary-100 text-sm mt-6">
+                * Final price may vary based on actual conditions
+              </p>
+            </div>
+
+            {/* Property Summary */}
+            <div className="bg-cream rounded-2xl p-6 border border-gray-100">
+              <h4 className="font-semibold text-gray-900 mb-4">Your Selection</h4>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span className="text-gray-500">Service:</span>
+                  <p className="font-medium">{serviceLabels[propertyData.serviceType]}</p>
+                </div>
+                <div>
+                  <span className="text-gray-500">Rooms:</span>
+                  <p className="font-medium">{propertyData.numberOfRooms}</p>
+                </div>
+                <div>
+                  <span className="text-gray-500">Bathrooms:</span>
+                  <p className="font-medium">{propertyData.numberOfBathrooms}</p>
+                </div>
+                {estimate.addons > 0 && (
+                  <div>
+                    <span className="text-gray-500">Add-ons:</span>
+                    <p className="font-medium">
+                      {[
+                        propertyData.closetsKitchen && 'Kitchen',
+                        propertyData.closetsBedroom && 'Bedroom',
+                        propertyData.closetsGarage && 'Garage',
+                        propertyData.closetsBasement && 'Basement',
+                      ].filter(Boolean).join(', ')}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="flex gap-4">
+              <button
+                onClick={() => setStep(1)}
+                className="flex-1 btn-secondary flex items-center justify-center gap-2"
+              >
+                <ArrowLeft className="w-5 h-5" />
+                Modify
+              </button>
+              <button
+                onClick={() => setStep(3)}
+                className="flex-1 btn-primary flex items-center justify-center gap-2"
+              >
+                Book This Price
+                <ArrowRight className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Step 3: Contact Info */}
+        {step === 3 && (
+          <form onSubmit={contactForm.handleSubmit(onContactSubmit)} className="space-y-8">
+            <div className="bg-cream rounded-2xl p-6 sm:p-8 shadow-sm border border-gray-100">
+              <div className="bg-primary/10 rounded-xl p-4 mb-6 flex items-center justify-between">
+                <span className="text-primary font-medium">Your Estimate:</span>
+                <span className="text-2xl font-bold text-primary">${estimate?.total}</span>
+              </div>
+
+              <h3 className="text-lg font-semibold text-gray-900 mb-6">
+                Contact Information
+              </h3>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Full Name *
+                  </label>
+                  <input
+                    type="text"
+                    {...contactForm.register('fullName')}
+                    placeholder="John Doe"
+                    className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                  />
+                  {contactForm.formState.errors.fullName && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {contactForm.formState.errors.fullName.message}
+                    </p>
+                  )}
+                </div>
+
+                <div className="bg-gray-50 rounded-xl p-4">
+                  <p className="text-sm text-gray-600 mb-4">
+                    Provide at least one way to contact you (phone OR email)
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Phone Number
+                      </label>
+                      <input
+                        type="tel"
+                        {...contactForm.register('phone')}
+                        placeholder="(555) 123-4567"
+                        className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Email
+                      </label>
+                      <input
+                        type="email"
+                        {...contactForm.register('email')}
+                        placeholder="john@example.com"
+                        className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                      />
+                    </div>
+                  </div>
+                  {contactForm.formState.errors.phone && (
+                    <p className="text-red-500 text-sm mt-2">
+                      {contactForm.formState.errors.phone.message}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Service Address *
+                  </label>
+                  <input
+                    type="text"
+                    {...contactForm.register('address')}
+                    placeholder="123 Main St, City, CA"
+                    className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                  />
+                  {contactForm.formState.errors.address && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {contactForm.formState.errors.address.message}
+                    </p>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Preferred Date (optional)
+                    </label>
+                    <input
+                      type="date"
+                      {...contactForm.register('preferredDate')}
+                      className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Preferred Time (optional)
+                    </label>
+                    <select
+                      {...contactForm.register('preferredTime')}
+                      className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                    >
+                      <option value="">Select time</option>
+                      <option value="8:00 AM">8:00 AM</option>
+                      <option value="9:00 AM">9:00 AM</option>
+                      <option value="10:00 AM">10:00 AM</option>
+                      <option value="11:00 AM">11:00 AM</option>
+                      <option value="12:00 PM">12:00 PM</option>
+                      <option value="1:00 PM">1:00 PM</option>
+                      <option value="2:00 PM">2:00 PM</option>
+                      <option value="3:00 PM">3:00 PM</option>
+                      <option value="4:00 PM">4:00 PM</option>
+                      <option value="5:00 PM">5:00 PM</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Additional Notes (optional)
+                  </label>
+                  <textarea
+                    {...contactForm.register('additionalNotes')}
+                    rows={3}
+                    placeholder="Any special requests or information..."
+                    className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all resize-none"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {submitStatus === 'error' && (
+              <div className="bg-red-50 text-red-700 px-4 py-3 rounded-xl flex items-center gap-2">
+                <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                Something went wrong. Please try again.
+              </div>
+            )}
+
+            <div className="flex gap-4">
+              <button
+                type="button"
+                onClick={() => setStep(2)}
+                className="flex-1 btn-secondary flex items-center justify-center gap-2"
+              >
+                <ArrowLeft className="w-5 h-5" />
+                Back
+              </button>
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="flex-1 btn-primary flex items-center justify-center gap-2 disabled:opacity-70"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    Submitting...
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-5 h-5" />
+                    Submit Request
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
+        )}
+
+        {/* Step 4: Success */}
+        {step === 4 && (
+          <div className="text-center py-12">
+            <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <CheckCircle2 className="w-10 h-10 text-green-600" />
+            </div>
+            <h3 className="text-2xl font-bold text-gray-900 mb-4">
+              Request Submitted!
+            </h3>
+            <p className="text-gray-600 mb-2">
+              Your estimated price: <span className="font-bold text-primary">${estimate?.total}</span>
+            </p>
+            <p className="text-gray-600 mb-8">
+              We&apos;ll contact you within 24 hours to confirm your booking.
+            </p>
+            <button
+              onClick={resetForm}
+              className="btn-secondary"
+            >
+              Get Another Estimate
             </button>
           </div>
+        )}
 
-          {/* Privacy Note */}
-          <p className="text-center text-gray-500 text-sm mt-6">
-            By submitting this form, you agree to be contacted about your cleaning estimate. 
-            We respect your privacy and will never share your information.
+        {/* Trust Badge */}
+        {step < 4 && (
+          <p className="text-center text-sm text-gray-500 mt-6">
+            🔒 Your information is secure and will never be shared.
           </p>
-        </form>
+        )}
       </div>
     </section>
   )
 }
-
